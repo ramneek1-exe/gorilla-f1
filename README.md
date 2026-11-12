@@ -52,10 +52,23 @@ starts with `(.venv)` when it is active.
 pytest
 ```
 
+## Inspect a session
+
+Compress every lap of a session and print sizes and statistics. The first run
+downloads the data into `./cache`.
+
+```
+python -m scripts.inspect_session 2025 Monza R
+```
+
 ## Layout
 
 ```
 gorilla/bitio.py        bit-level writer and reader
 gorilla/timestamps.py   delta-of-delta timestamp encoder and decoder
+gorilla/values.py       XOR value encoder and decoder
+gorilla/block.py        block format: one driver's lap, all channels
+gorilla/ingest.py       loads FastF1 car data and splits it into laps
+scripts/                command-line tools
 tests/                  unit tests
 ```
