@@ -52,13 +52,40 @@ starts with `(.venv)` when it is active.
 pytest
 ```
 
-## Inspect a session
+## Race data
 
-Compress every lap of a session and print sizes and statistics. The first run
-downloads the data into `./cache`.
+Telemetry is downloaded once with FastF1 and saved to `data/` as one file per
+session. Every other script reads those files, so the project runs offline and
+needs no F1 account.
+
+The saved races are already in `data/`. To add another (this needs an F1 TV
+account; FastF1 asks for the email and password):
 
 ```
-python -m scripts.inspect_session 2025 Monza R
+python -m scripts.export_session 2025 Monaco R
+```
+
+The arguments are the season, the event name and the session (`R` race,
+`Q` qualifying). FastF1's download cache goes in `cache/`, which is not part of
+the repository and can be deleted after exporting.
+
+## Inspect a race
+
+Compress every lap of a saved race, check that it decodes back exactly, and
+print sizes and statistics. Pick the race from the menu:
+
+```
+python -m scripts.inspect_session
+```
+
+## Query a race
+
+Pick a race, then look up any driver, lap and channel. Each answer is decoded
+from the compressed store, checked against an uncompressed copy, and timed.
+The stores are built the first time a race is opened and saved in `results/`.
+
+```
+python -m scripts.query
 ```
 
 ## Layout
@@ -69,6 +96,9 @@ gorilla/timestamps.py   delta-of-delta timestamp encoder and decoder
 gorilla/values.py       XOR value encoder and decoder
 gorilla/block.py        block format: one driver's lap, all channels
 gorilla/ingest.py       loads FastF1 car data and splits it into laps
+gorilla/dataset.py      saves and loads race data files in data/
+gorilla/store.py        indexed store of a whole race, with queries
+data/                   saved race data
 scripts/                command-line tools
 tests/                  unit tests
 ```
