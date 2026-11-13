@@ -33,6 +33,9 @@ def test_queries_return_the_original_data(fmt, tmp_path):
         for lap in laps:
             assert s.get(lap.driver, lap.lap_number, "Speed") == (lap.timestamps, lap.channels["Speed"])
             assert s.get_lap(lap.driver, lap.lap_number) == (lap.timestamps, lap.channels)
+            wanted = ["RPM", "Brake"]
+            assert s.get_channels(lap.driver, lap.lap_number, wanted) == \
+                (lap.timestamps, {c: lap.channels[c] for c in wanted})
 
 
 def test_range_joins_laps_in_order():

@@ -44,10 +44,10 @@ TIME_STREAM = "_time"  # stream name used for shared timestamps
 
 
 def encode_block(timestamps, channels, layout=SHARED):
-    """Compressing one lap:
+    """Compress one lap.
 
-        timestamps: list of int milliseconds
-        channels:   dict of channel name -> list of numbers (same length as timestamps)
+    timestamps: list of int milliseconds
+    channels:   dict of channel name -> list of numbers (same length as timestamps)
 
     Returns (block bytes, stats), where stats holds the encoder statistics
     and bit counts used by the experiments.
@@ -174,6 +174,31 @@ def decode_channel(data, name):
     if name not in header["streams"] or name == TIME_STREAM:
         raise KeyError(f"no channel {name!r} in this block")
     return _decode_series(data, header, name)
+
+
+def decode_channels(data, names):
+    """Decode several channels from a block. Returns (timestamps, {channel: values}).
+
+    In the shared layout the timestamp stream is decoded once and reused for
+    every channel; only the requested value streams are read.
+    """
+    header = read_header(data)
+    for name in names:
+        if name not in header["streams"] or name == TIME_STREAM:
+            raise KeyError(f"no channel {name!r} in this block")
+
+    if header["layout"] == SHARED:
+        timestamps = _decode_shared_time(data, header)
+        channels = {}
+        for name in names:
+            dec = ValueDecoder(_reader(data, header, name))
+            channels[name] = [dec.next() for _ in range(header["count"])]
+        return timestamps, channels
+
+    channels, timestamps = {}, None
+    for name in names:
+        timestamps, channels[name] = _decode_series(data, header, name)
+    return timestamps, channels
 
 
 def decode_block(data):

@@ -2,6 +2,11 @@
 
 import sys
 
+try:
+    import readline  # noqa: F401  (arrow keys and line editing in input(); not on Windows)
+except ImportError:
+    pass
+
 from gorilla.dataset import list_datasets
 
 

@@ -8,6 +8,7 @@ from gorilla.block import (
     TIME_STREAM,
     decode_block,
     decode_channel,
+    decode_channels,
     encode_block,
     read_header,
 )
@@ -88,3 +89,15 @@ def test_block_much_smaller_than_raw():
 def test_mismatched_lengths_rejected():
     with pytest.raises(ValueError):
         encode_block([1, 2, 3], {"Speed": [1.0, 2.0]})
+
+
+@pytest.mark.parametrize("layout", [SHARED, PER_CHANNEL])
+def test_decode_several_channels(layout):
+    timestamps, channels = fake_lap()
+    block, _ = encode_block(timestamps, channels, layout)
+    ts, picked = decode_channels(block, ["Throttle", "Speed"])
+    assert ts == timestamps
+    assert list(picked) == ["Throttle", "Speed"]
+    assert picked == {"Throttle": channels["Throttle"], "Speed": channels["Speed"]}
+    with pytest.raises(KeyError):
+        decode_channels(block, ["Speed", "Gearbox"])

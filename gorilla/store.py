@@ -23,7 +23,7 @@ Two block formats share this layout so they can be compared fairly:
 import json
 import struct
 
-from .block import SHARED, decode_block, decode_channel, encode_block
+from .block import SHARED, decode_block, decode_channel, decode_channels, encode_block
 
 MAGIC = b"GST1"
 GORILLA = "gorilla"
@@ -68,6 +68,18 @@ def decode_raw_channel(data, name):
     timestamps = list(struct.unpack_from(f">{count}q", data, start))
     pos = start + 8 * count * (1 + names.index(name))
     return timestamps, list(struct.unpack_from(f">{count}d", data, pos))
+
+
+def decode_raw_channels(data, names):
+    count, all_names, start = _raw_layout(data)
+    timestamps = list(struct.unpack_from(f">{count}q", data, start))
+    channels = {}
+    for name in names:
+        if name not in all_names:
+            raise KeyError(f"no channel {name!r} in this block")
+        pos = start + 8 * count * (1 + all_names.index(name))
+        channels[name] = list(struct.unpack_from(f">{count}d", data, pos))
+    return timestamps, channels
 
 
 # The store -------------------------------------------------------------------
@@ -153,6 +165,13 @@ class Store:
         if self.block_format == GORILLA:
             return decode_channel(block, channel)
         return decode_raw_channel(block, channel)
+
+    def get_channels(self, driver, lap, channels):
+        """Several channels for one lap. Returns (timestamps, {channel: values})."""
+        block = self._block(driver, lap)
+        if self.block_format == GORILLA:
+            return decode_channels(block, channels)
+        return decode_raw_channels(block, channels)
 
     def get_lap(self, driver, lap):
         """Every channel for one lap. Returns (timestamps, {channel: values})."""

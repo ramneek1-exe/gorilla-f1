@@ -4,7 +4,8 @@ Usage (from the project folder):
 
     python -m scripts.query
 
-Pick a race, then ask for any driver, lap and channel. Each answer is decoded
+Pick a race, then ask for any driver, lap and one or more channels
+(separated by spaces or commas, e.g. "Speed RPM Throttle"). Each answer is decoded
 from the compressed store and checked against an uncompressed store of the
 same data, and both lookups are timed.
 
@@ -13,6 +14,7 @@ so later runs open instantly.
 """
 
 import os
+import re
 import statistics
 import time
 
@@ -80,6 +82,27 @@ def ask(prompt, valid, show):
         print(f"  Not found. Options: {show}")
 
 
+def ask_channels(channels):
+    """Ask for one or more channels. Empty answer quits. Returns a list in the order given."""
+    lookup = {c.lower(): c for c in channels}
+    while True:
+        answer = input(f"Channels ({', '.join(channels)}): ").strip()
+        if answer == "":
+            return None
+        if answer.lower() == "all":
+            return list(channels)
+        wanted = [w for w in re.split(r"[\s,&+]+", answer) if w]
+        unknown = [w for w in wanted if w.lower() not in lookup]
+        if unknown:
+            print(f"  Not found: {', '.join(unknown)}. Options: {', '.join(channels)}, or all")
+            continue
+        picked = []
+        for w in wanted:
+            if lookup[w.lower()] not in picked:
+                picked.append(lookup[w.lower()])
+        return picked
+
+
 def main():
     path, meta = choose_dataset()
     stores = open_stores(path, meta)
@@ -103,24 +126,28 @@ def main():
         lap = ask(f"Lap ({laps[0]}-{laps[-1]}): ", laps, f"laps {laps[0]} to {laps[-1]}")
         if lap is None:
             return
-        channel = ask(f"Channel ({', '.join(channels)}): ", channels, ", ".join(channels))
-        if channel is None:
+        wanted = ask_channels(channels)
+        if wanted is None:
             return
 
-        timestamps, values = gorilla.get(driver, lap, channel)
-        same = (timestamps, values) == raw.get(driver, lap, channel)
-        top, top_t = gorilla.max_value(driver, lap, channel)
+        timestamps, values = gorilla.get_channels(driver, lap, wanted)
+        same = (timestamps, values) == raw.get_channels(driver, lap, wanted)
         duration = (timestamps[-1] - timestamps[0]) / 1000
 
-        print(f"\n{driver} lap {lap}, {channel}: {len(values)} samples over {duration:.1f} s")
-        print(f"  {sparkline(values)}")
-        print(f"  min {min(values):g}, max {top:g} "
-              f"(at {(top_t - timestamps[0]) / 1000:.1f} s into the lap), "
-              f"mean {statistics.fmean(values):.1f}")
-        print(f"  matches the uncompressed store: {'yes' if same else 'NO'}")
-        print(f"  lookup time (median of {TIMING_RUNS}): "
-              f"compressed {timed(gorilla.get, driver, lap, channel):.2f} ms, "
-              f"uncompressed {timed(raw.get, driver, lap, channel):.2f} ms")
+        print(f"\n{driver} lap {lap}: {len(timestamps)} samples over {duration:.1f} s")
+        for name in wanted:
+            v = values[name]
+            top = max(range(len(v)), key=v.__getitem__)
+            print(f"\n  {name}")
+            print(f"  {sparkline(v)}")
+            print(f"  min {min(v):g}, max {v[top]:g} "
+                  f"(at {(timestamps[top] - timestamps[0]) / 1000:.1f} s into the lap), "
+                  f"mean {statistics.fmean(v):.1f}")
+        print(f"\n  matches the uncompressed store: {'yes' if same else 'NO'}")
+        print(f"  lookup time for {len(wanted)} channel{'s' if len(wanted) > 1 else ''} "
+              f"(median of {TIMING_RUNS}): "
+              f"compressed {timed(gorilla.get_channels, driver, lap, wanted):.2f} ms, "
+              f"uncompressed {timed(raw.get_channels, driver, lap, wanted):.2f} ms")
 
 
 if __name__ == "__main__":

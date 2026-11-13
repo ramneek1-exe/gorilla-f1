@@ -80,8 +80,9 @@ python -m scripts.inspect_session
 
 ## Query a race
 
-Pick a race, then look up any driver, lap and channel. Each answer is decoded
-from the compressed store, checked against an uncompressed copy, and timed.
+Pick a race, then look up any driver, lap and one or more channels (for example
+`Speed RPM Throttle`, or `all`). Each answer is decoded from the compressed
+store, checked against an uncompressed copy, and timed.
 The stores are built the first time a race is opened and saved in `results/`.
 
 ```
