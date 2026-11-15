@@ -103,3 +103,12 @@ data/                   saved race data
 scripts/                command-line tools
 tests/                  unit tests
 ```
+
+## Run the experiments
+
+Run every experiment on every saved race. Tables (CSV), charts (PNG) and a
+summary go to `results/experiments/`. This takes several minutes.
+
+```
+python -m scripts.experiments
+```

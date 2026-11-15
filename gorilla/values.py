@@ -17,7 +17,6 @@ Two details from the paper's 5-bit and 6-bit header fields:
   * The leading-zero count must fit in 5 bits (0 to 31). If there are more
     than 31 leading zeros, we record 31; the extra zeros simply become part
     of the meaningful bits.
-
   * The length must fit in 6 bits (0 to 63), but a length of 64 is possible
     when the first and last bits both flip. A length of 0 can never happen
     (XOR is not 0 here), so 0 is used to mean 64.
@@ -31,7 +30,7 @@ MAX_LEADING = 31  # largest number a 5-bit field can hold
 
 
 def float_to_bits(x):
-    # The 64-bit IEEE 754 pattern of a float, as an unsigned integer.
+    """The 64-bit IEEE 754 pattern of a float, as an unsigned integer."""
     return struct.unpack(">Q", struct.pack(">d", float(x)))[0]
 
 
@@ -49,8 +48,11 @@ def trailing_zeros(x):
 
 
 class ValueEncoder:
-    def __init__(self, writer=None):
+    def __init__(self, writer=None, reuse_window=True):
+        """reuse_window=False always writes a new header (11). The output still
+        decodes with ValueDecoder; it exists to measure what window reuse saves."""
         self.writer = writer if writer is not None else BitWriter()
+        self.reuse_window = reuse_window
         self.count = 0
         # How often each case happens and how many bits it cost, for the experiments.
         self.stats = {case: {"count": 0, "bits": 0} for case in ("first", "repeat", "reuse", "new")}
@@ -75,7 +77,8 @@ class ValueEncoder:
                 leading = min(leading_zeros(xor), MAX_LEADING)
                 trailing = trailing_zeros(xor)
 
-                fits = (self._win_leading is not None
+                fits = (self.reuse_window
+                        and self._win_leading is not None
                         and leading >= self._win_leading
                         and trailing >= self._win_trailing)
                 if fits:

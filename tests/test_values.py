@@ -4,6 +4,7 @@ import struct
 
 from gorilla.bitio import BitReader
 from gorilla.values import (
+    ValueDecoder,
     ValueEncoder,
     decode_values,
     encode_values,
@@ -96,3 +97,13 @@ def test_throttle_style_data_is_mostly_repeats():
     assert stats["repeat"]["count"] >= 85
     assert n_bits < 64 * len(throttle) / 10   # better than 10x
     assert decode_values(data, n_bits, len(throttle)) == [float(v) for v in throttle]
+
+
+def test_without_window_reuse_still_decodes_but_costs_more():
+    enc = ValueEncoder(reuse_window=False)
+    for v in LAP:
+        enc.add(v)
+    assert enc.stats["reuse"]["count"] == 0
+    assert enc.writer.bit_length > 226
+    dec = ValueDecoder(BitReader(enc.writer.to_bytes(), enc.writer.bit_length))
+    assert [dec.next() for _ in LAP] == [float(v) for v in LAP]
