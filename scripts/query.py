@@ -16,6 +16,7 @@ so later runs open instantly.
 import os
 import re
 import statistics
+import sys
 import time
 
 from gorilla.dataset import load_laps
@@ -25,7 +26,19 @@ from .menu import choose_dataset, describe
 
 RESULTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results")
 TIMING_RUNS = 30
-SPARK = "▁▂▃▄▅▆▇█"
+
+
+def _can_print(text):
+    try:
+        text.encode(sys.stdout.encoding or "ascii")
+        return True
+    except (UnicodeEncodeError, LookupError):
+        return False
+
+
+# Block characters for the one-line charts, or plain ASCII where the terminal
+# cannot show them (some Windows setups).
+SPARK = "▁▂▃▄▅▆▇█" if _can_print("▁▂▃▄▅▆▇█") else " .:-=+*#"
 
 
 def open_stores(path, meta):

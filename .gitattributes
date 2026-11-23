@@ -1,0 +1,2 @@
+# Race data files are binary; never convert their line endings.
+*.gz binary

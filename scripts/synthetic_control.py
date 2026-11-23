@@ -64,7 +64,7 @@ def main():
     for label, s in sums.items():
         rows.append(["All races", label, f"{s['time_bits'] / s['samples']:.2f}", f"{s['zero'] / s['samples']:.1f}",
                      f"{s[PER_CHANNEL] / s['points']:.3f}", f"{s[SHARED] / s['points']:.3f}"])
-    with open(os.path.join(OUT_DIR, "7_synthetic_control.csv"), "w", newline="") as f:
+    with open(os.path.join(OUT_DIR, "7_synthetic_control.csv"), "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["race", "timestamps", "bits_per_timestamp", "one_bit_pct",
                     "paper_layout_bytes_per_point", "shared_layout_bytes_per_point"])

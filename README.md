@@ -9,7 +9,11 @@ Paper: https://www.vldb.org/pvldb/vol8/p1816-teller.pdf
 
 ## Requirements
 
-Python 3.10 or newer.
+Python 3.10 or newer (tested on 3.10, 3.13 and 3.14).
+
+On Windows, install Python from https://www.python.org/downloads/ and tick
+"Add python.exe to PATH" in the installer. If typing `python` opens the
+Microsoft Store instead, use `py` in its place (for example `py -m venv .venv`).
 
 ## Setup
 
@@ -111,4 +115,13 @@ summary go to `results/experiments/`. This takes several minutes.
 
 ```
 python -m scripts.experiments
+```
+
+The synthetic control re-runs the size measurements with every lap's
+timestamps replaced by an exact 240 ms grid, to show the cost of F1's
+irregular sampling. It takes a few minutes and writes
+`results/experiments/7_synthetic_control.csv`.
+
+```
+python -m scripts.synthetic_control
 ```

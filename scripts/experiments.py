@@ -228,7 +228,7 @@ def speed(laps, meta, rng, n_queries=300):
 
 def write_csv(name, header, rows):
     path = os.path.join(OUT_DIR, name)
-    with open(path, "w", newline="") as f:
+    with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(header)
         w.writerows(rows)
@@ -383,7 +383,7 @@ def main():
         f"  one-channel lap query: compressed {sp['query_median_ms']:.2f} ms median "
         f"({sp['query_p95_ms']:.2f} p95), uncompressed {sp['raw_query_median_ms']:.3f} ms",
     ]
-    with open(os.path.join(OUT_DIR, "summary.txt"), "w") as f:
+    with open(os.path.join(OUT_DIR, "summary.txt"), "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
     print("\n" + "\n".join(lines))
 

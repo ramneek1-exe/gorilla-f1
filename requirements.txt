@@ -1,4 +1,4 @@
 fastf1
-matplotlib
-zstandard
+matplotlib>=3.7
+zstandard; python_version < "3.14"
 pytest
