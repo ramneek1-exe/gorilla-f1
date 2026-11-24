@@ -39,7 +39,7 @@ BUCKETS = [
 ]
 FALLBACK_PREFIX = 0b1111  # for any other value
 FALLBACK_WIDTH = 32
-FIRST_WIDTH = 64  # full widthfor the first timestamp
+FIRST_WIDTH = 64  # full width for the first timestamp
 
 # Names used in the stats, so experiments can count how often each case happens.
 BUCKET_NAMES = ["zero", "7-bit", "9-bit", "12-bit", "32-bit"]
@@ -94,7 +94,7 @@ class TimestampEncoder:
 
 # class to decode timestamps from bitstream
 class TimestampDecoder:
-    def __init__(self, reader): # decodes the bitstream into timestamps
+    def __init__(self, reader): # initialize the decoder
         self.reader = reader
         self._prev_t = None
         self._prev_delta = 0

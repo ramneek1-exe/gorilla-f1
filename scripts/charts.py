@@ -120,7 +120,7 @@ def timestamp_buckets(out_dir, all_time):
     ax.legend(loc="lower right", fontsize=8)
     _save(fig, out_dir, "fig4_timestamp_buckets.png")
 
-# create a line chart of block size and query time for each race.
+# create two line charts: size (all races) and one-lap query time (timing race) for each block size
 def block_size(out_dir, block_rows, timing_name):
     labels = [r[0] for r in block_rows]
     size = [float(r[1]) for r in block_rows]
@@ -143,7 +143,7 @@ def block_size(out_dir, block_rows, timing_name):
                  fontweight="bold", fontsize=12)
     _save(fig, out_dir, "fig5_block_size.png")
 
-# create a bar chart of timestamp buckets for each race.
+# create a bar chart of what window reuse and delta-of-delta each save (ablations).
 def ablations(out_dir, reuse_rows, ts):
     dod_bits, delta_bits, samples = ts
     names = [r[0] for r in reuse_rows] + ["Timestamps"]

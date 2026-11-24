@@ -132,7 +132,7 @@ def merge(group):
 def block_size_bytes(laps, laps_per_block):
     return sum(encode_block(*merge(g), SHARED)[1]["total_bytes"] for g in group_laps(laps, laps_per_block))
 
-# helper function to calculate block size in milliseconds.
+# helper function to time a one-lap query when each block holds several laps.
 def block_size_query_ms(laps, laps_per_block, rng, n_queries=40):
     # Median time to answer one lap's Speed when that lap sits in a bigger block.
     blocks = []

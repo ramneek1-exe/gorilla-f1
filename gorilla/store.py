@@ -43,7 +43,7 @@ def encode_raw_block(timestamps, channels):
         out += struct.pack(f">{count}d", *channels[name])
     return bytes(out)
 
-# Parse a raw block header; return (count, channel names, data start offset).)
+# Parse a raw block header; return (count, channel names, data start offset)
 def _raw_layout(data):
     count, header_len = struct.unpack_from(">II", data, 0)
     names = json.loads(data[8:8 + header_len].decode("ascii"))

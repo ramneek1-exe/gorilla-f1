@@ -24,7 +24,7 @@ class BitWriter: #class to write bits
             return
         if n < 0 or n > 64: #if n is not between 0 and 64, raise an error
             raise ValueError(f"width must be between 0 and 64, got {n}")
-        if value < 0 or value >> n: #if value is not between 0 and 2^n, raise an error
+        if value < 0 or value >> n: #if value is not between 0 and 2^n - 1, raise an error
             raise ValueError(f"{value} does not fit in {n} bits")
 
         # Shift the new bits onto the right end of the accumulator.
