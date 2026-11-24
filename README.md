@@ -129,3 +129,6 @@ irregular sampling. It takes a few minutes and writes
 ```
 python -m scripts.synthetic_control
 ```
+
+<img width="3392" height="1908" alt="image" src="https://github.com/user-attachments/assets/247d2709-88f1-4f67-bed7-07b903785a58" />
+Credits: Formula1.com (https://www.formula1.com/en/latest/article/why-we-love-the-french-grand-prix-2019.6ygyTbj0X3T7cWlsLwmbwe)
