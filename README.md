@@ -1,5 +1,9 @@
 # Gorilla compression on F1 telemetry
 
+#### Contributors:
+
+Ramneek Singh and Yatharth Bhardwaj
+
 CPSC 4660 (Fall 2026) course project. A from-scratch Python implementation of the
 time-series compression scheme from Pelkonen et al., "Gorilla: A Fast, Scalable,
 In-Memory Time Series Database" (VLDB 2015, Section 4.1), applied to Formula 1

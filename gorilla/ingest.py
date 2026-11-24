@@ -24,7 +24,7 @@ class LapData:
     timestamps: list     # int milliseconds since the session started
     channels: dict = field(default_factory=dict)  # name -> list of floats
 
-
+# convert a column of time offsets to integer milliseconds
 def timedelta_to_ms(series):
     """Convert a column of time offsets to integer milliseconds.
 
@@ -37,7 +37,7 @@ def timedelta_to_ms(series):
     not_whole = int((micros % 1000 != 0).sum())
     return ms.tolist(), not_whole
 
-
+# convert channel values to floats
 def _channel_values(frame, name):
     column = frame[name]
     if column.dtype == bool:
@@ -45,12 +45,12 @@ def _channel_values(frame, name):
     return [float(v) for v in column]
 
 
-def split_into_laps(car_data, laps, driver):
+def split_into_laps(car_data, laps, driver): # split one car's telemetry into laps.
     """Split one car's telemetry into laps.
 
     car_data: a car's DataFrame from session.car_data
     laps:     that driver's rows from session.laps
-    driver:   the driver's three-letter code
+    driver:   the driver's three-letter code (e.g. Max Verstappen = "VER")
 
     A sample belongs to a lap if LapStartTime <= SessionTime < Time (the
     lap's end). Laps without a start or end time are skipped.
@@ -59,12 +59,13 @@ def split_into_laps(car_data, laps, driver):
     """
     channels = [c for c in CHANNELS if c in car_data.columns]
     result, rounded = [], 0
-
-    for _, lap in laps.sort_values("LapNumber").iterrows():
+    
+    # for each lap, find the rows that belong to that lap and convert them to ms
+    for _, lap in laps.sort_values("LapNumber").iterrows(): # iterate over laps
         start, end = lap["LapStartTime"], lap["Time"]
         if pd.isna(start) or pd.isna(end) or pd.isna(lap["LapNumber"]):
             continue
-        in_lap = car_data[(car_data["SessionTime"] >= start) & (car_data["SessionTime"] < end)]
+        in_lap = car_data[(car_data["SessionTime"] >= start) & (car_data["SessionTime"] < end)] # find the rows that belong to that lap
         if len(in_lap) < 2:
             continue
         timestamps, n_rounded = timedelta_to_ms(in_lap["SessionTime"])
@@ -77,14 +78,14 @@ def split_into_laps(car_data, laps, driver):
         ))
     return result, rounded
 
-
+# load a session's laps and car data. (uses fastf1)
 def load_session(year, event, session_type, cache_dir="cache"):
     """Download (or read from the local cache) a session's laps and car data."""
     import fastf1  # imported here so the rest of the project works without it
 
-    os.makedirs(cache_dir, exist_ok=True)
-    fastf1.Cache.configure(cache_dir=cache_dir)
-    session = fastf1.get_session(year, event, session_type)
+    os.makedirs(cache_dir, exist_ok=True) # make cache directory
+    fastf1.Cache.configure(cache_dir=cache_dir) # configure cache
+    session = fastf1.get_session(year, event, session_type) # get session
     session.load(laps=True, telemetry=True, weather=False, messages=False)
     return session
 
@@ -95,12 +96,12 @@ def session_laps(session):
     Returns (list of LapData, number of rounded timestamps).
     """
     all_laps, rounded = [], 0
-    for number, car_data in session.car_data.items():
-        driver_laps = session.laps[session.laps["DriverNumber"] == number]
+    for number, car_data in session.car_data.items(): # for each driver
+        driver_laps = session.laps[session.laps["DriverNumber"] == number] # find the driver's laps
         if driver_laps.empty:
             continue
-        driver = str(driver_laps["Driver"].iloc[0])
-        laps, n_rounded = split_into_laps(car_data, driver_laps, driver)
-        all_laps.extend(laps)
-        rounded += n_rounded
+        driver = str(driver_laps["Driver"].iloc[0]) # get the driver's name
+        laps, n_rounded = split_into_laps(car_data, driver_laps, driver) # split into laps
+        all_laps.extend(laps) # add to list of all laps
+        rounded += n_rounded # add to rounded count
     return all_laps, rounded

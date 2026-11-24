@@ -22,10 +22,9 @@ from .menu import choose_dataset, describe
 
 RAW_BYTES_PER_POINT = 16  # 8-byte timestamp + 8-byte value, as in the paper
 
-
+# helper functions
 def pct(part, whole):
     return 100.0 * part / whole if whole else 0.0
-
 
 def same_bits(a, b):
     return len(a) == len(b) and all(float_to_bits(x) == float_to_bits(y) for x, y in zip(a, b))

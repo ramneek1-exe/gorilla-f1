@@ -54,20 +54,20 @@ PAPER_ZERO_BUCKET = 96.0
 CASES = ("repeat", "reuse", "new")
 BLOCK_SIZES = [1, 2, 5, 10, None]  # laps per block; None = the whole race for each driver
 
-
+# create a short name for a race.
 def short_name(meta):
     event = meta["event"].replace(" Grand Prix", "")
     return f"{event} {meta['year']}"
 
-
+# calculate percentage.
 def pct(part, whole):
     return 100.0 * part / whole if whole else 0.0
 
 
 # 1-3: compression, channels, timestamps -------------------------------------
 
+# measure the size of one race in every format, plus the encoder statistics.
 def measure_race(laps):
-    """Size of one race in every format, plus the encoder statistics."""
     channels = list(laps[0].channels)
     samples = sum(len(lap.timestamps) for lap in laps)
     r = {
@@ -109,8 +109,9 @@ def measure_race(laps):
 
 # 4: block size ----------------------------------------------------------------
 
+# helper function to group laps into blocks.
 def group_laps(laps, laps_per_block):
-    """Join each driver's consecutive laps into blocks of `laps_per_block` laps."""
+    # Join each driver's consecutive laps into blocks of `laps_per_block` laps.
     by_driver = {}
     for lap in laps:
         by_driver.setdefault(lap.driver, []).append(lap)
@@ -121,19 +122,19 @@ def group_laps(laps, laps_per_block):
             groups.append(driver_laps[i:i + size])
     return groups
 
-
+# helper function to merge a group of laps.
 def merge(group):
     timestamps = [t for lap in group for t in lap.timestamps]
     channels = {c: [v for lap in group for v in lap.channels[c]] for c in group[0].channels}
     return timestamps, channels
 
-
+# helper function to calculate block size in bytes.
 def block_size_bytes(laps, laps_per_block):
     return sum(encode_block(*merge(g), SHARED)[1]["total_bytes"] for g in group_laps(laps, laps_per_block))
 
-
+# helper function to calculate block size in milliseconds.
 def block_size_query_ms(laps, laps_per_block, rng, n_queries=40):
-    """Median time to answer one lap's Speed when that lap sits in a bigger block."""
+    # Median time to answer one lap's Speed when that lap sits in a bigger block.
     blocks = []
     for g in group_laps(laps, laps_per_block):
         block, _ = encode_block(*merge(g), SHARED)
@@ -153,8 +154,9 @@ def block_size_query_ms(laps, laps_per_block, rng, n_queries=40):
 
 # 5: ablations ------------------------------------------------------------------
 
+# helper function to calculate bucket cost.
 def bucket_cost(dod):
-    """Bits the timestamp encoder spends on one delta-of-delta value."""
+    # Bits the timestamp encoder spends on one delta-of-delta value.
     if dod == 0:
         return 1
     for low, high, _prefix, prefix_len, width in BUCKETS:
@@ -162,9 +164,9 @@ def bucket_cost(dod):
             return prefix_len + width
     return 4 + 32
 
-
+# helper function to calculate timestamp ablation.
 def timestamp_ablation(laps):
-    """Bits for timestamps with delta-of-delta (the paper) and with plain deltas."""
+    # Bits for timestamps with delta-of-delta (the paper) and with plain deltas.
     dod_bits = delta_bits = 0
     for lap in laps:
         ts = lap.timestamps
@@ -178,7 +180,7 @@ def timestamp_ablation(laps):
             prev_delta = delta
     return dod_bits, delta_bits
 
-
+# helper function to calculate value bits.
 def value_bits(laps, channel, reuse_window):
     total = 0
     for lap in laps:
@@ -191,6 +193,7 @@ def value_bits(laps, channel, reuse_window):
 
 # 6: speed -------------------------------------------------------------------------
 
+# helper function to calculate speed.
 def speed(laps, meta, rng, n_queries=300):
     points = sum(len(lap.timestamps) for lap in laps) * len(laps[0].channels)
 
@@ -226,6 +229,7 @@ def speed(laps, meta, rng, n_queries=300):
 
 # Output ------------------------------------------------------------------------------
 
+# helper function to write csv with header and rows (blocks)
 def write_csv(name, header, rows):
     path = os.path.join(OUT_DIR, name)
     with open(path, "w", newline="", encoding="utf-8") as f:
@@ -275,6 +279,8 @@ def main():
     timing = next(r for r in races if "speed" in r)
     total = lambda key: sum(r[key] for r in races)
     points_all = total("points")
+
+    # Experiments
 
     # 1. compression per race
     fmt_cols = ["raw16", "raw_store", "gzip_lap", "zstd_lap", "gzip_race", "zstd_race",

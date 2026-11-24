@@ -1,7 +1,7 @@
 """XOR value compression (Gorilla paper, Section 4.1.2).
 
 Every value is a 64-bit float. Each new value is XORed with the previous one,
-which leaves a 1 only in the bits that flipped. Then one of three things is
+which leaves a 1 only in the bits that flipped/changed. Then one of three cases is
 written:
 
     XOR is 0 (same value)                0                                   1 bit
@@ -28,25 +28,25 @@ from .bitio import BitReader, BitWriter
 
 MAX_LEADING = 31  # largest number a 5-bit field can hold
 
-
-def float_to_bits(x):
+#helper functions
+def float_to_bits(x): #converts float to bits
     """The 64-bit IEEE 754 pattern of a float, as an unsigned integer."""
     return struct.unpack(">Q", struct.pack(">d", float(x)))[0]
 
 
-def bits_to_float(b):
+def bits_to_float(b): #converts bits to float
     return struct.unpack(">d", struct.pack(">Q", b))[0]
 
 
-def leading_zeros(x):
+def leading_zeros(x): #counts leading zeros
     return 64 - x.bit_length()
 
 
-def trailing_zeros(x):
+def trailing_zeros(x): #counts trailing zeros
     # x & -x keeps only the lowest 1 bit, so its position is the trailing-zero count.
     return (x & -x).bit_length() - 1
 
-
+#class to encode values
 class ValueEncoder:
     def __init__(self, writer=None, reuse_window=True):
         """reuse_window=False always writes a new header (11). The output still
@@ -60,24 +60,24 @@ class ValueEncoder:
         self._win_leading = None  # remembered window, None until the first header
         self._win_trailing = None
 
-    def add(self, value):
+    def add(self, value): #adds a value to the encoder
         w = self.writer
         bits_before = w.bit_length
         cur = float_to_bits(value)
 
-        if self._prev is None:
+        if self._prev is None: #if the previous value is None, write the current value
             w.write_bits(cur, 64)
             case = "first"
-        else:
+        else: #else, calculate the xor of the current and previous values
             xor = cur ^ self._prev
-            if xor == 0:
+            if xor == 0: #if the xor is 0, write a 0 to the output
                 w.write_bits(0, 1)
                 case = "repeat"
-            else:
+            else: #else, calculate the leading and trailing zeros
                 leading = min(leading_zeros(xor), MAX_LEADING)
                 trailing = trailing_zeros(xor)
 
-                fits = (self.reuse_window
+                fits = (self.reuse_window #checks if the xor fits the remembered window
                         and self._win_leading is not None
                         and leading >= self._win_leading
                         and trailing >= self._win_trailing)
@@ -103,21 +103,21 @@ class ValueEncoder:
         self.stats[case]["count"] += 1
         self.stats[case]["bits"] += w.bit_length - bits_before
 
-
+#class to decode values
 class ValueDecoder:
-    def __init__(self, reader):
+    def __init__(self, reader): #inits the decoder with a reader
         self.reader = reader
         self._prev = None
         self._win_leading = None
         self._win_trailing = None
 
-    def next(self):
+    def next(self): #reads the next value from the decoder
         r = self.reader
-        if self._prev is None:
+        if self._prev is None: #if the previous value is None, read the current value
             cur = r.read_bits(64)
-        elif r.read_bit() == 0:
+        elif r.read_bit() == 0: #if the previous value is not None, check the first bit
             cur = self._prev                       # 0: same value
-        else:
+        else: #else, read the next bits
             if r.read_bit() == 1:                  # 11: read a new window
                 self._win_leading = r.read_bits(5)
                 length = r.read_bits(6) or 64      # 0 means 64
@@ -129,15 +129,15 @@ class ValueDecoder:
         self._prev = cur
         return bits_to_float(cur)
 
-
-def encode_values(values):
+#helper functions to encode and decode values
+def encode_values(values): #encodes a list of values
     """Encode a list of numbers. Returns (bytes, bit_length, stats)."""
     enc = ValueEncoder()
-    for v in values:
+    for v in values: 
         enc.add(v)
     return enc.writer.to_bytes(), enc.writer.bit_length, enc.stats
 
-
-def decode_values(data, bit_length, count):
+#helper function to decode values
+def decode_values(data, bit_length, count): #decodes a list of values
     dec = ValueDecoder(BitReader(data, bit_length))
     return [dec.next() for _ in range(count)]

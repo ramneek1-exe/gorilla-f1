@@ -15,6 +15,7 @@ NEUTRAL = "#b9b8b2"
 # Categorical colours, always used in this order.
 SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4"]
 
+# update the default rc parameters for matplotlib, these are used for all the charts.
 plt.rcParams.update({
     "figure.facecolor": SURFACE, "axes.facecolor": SURFACE, "savefig.facecolor": SURFACE,
     "axes.edgecolor": NEUTRAL, "axes.labelcolor": INK_2, "text.color": INK,
@@ -24,20 +25,20 @@ plt.rcParams.update({
     "axes.titlelocation": "left", "legend.frameon": False,
 })
 
-
+# helper function to save a figure and close it.
 def _save(fig, out_dir, name):
     fig.tight_layout()
     fig.savefig(os.path.join(out_dir, name), dpi=200, bbox_inches="tight", pad_inches=0.15)
     plt.close(fig)
 
-
+# helper function to add value labels to horizontal bars.
 def _hbar_value_labels(ax, bars, fmt):
     for bar in bars:
         w = bar.get_width()
         ax.text(w, bar.get_y() + bar.get_height() / 2, " " + fmt.format(w),
                 va="center", ha="left", fontsize=8, color=INK_2)
 
-
+# create a bar chart of bytes per point for each race, with different compression methods.
 def bytes_per_point(out_dir, races):
     names = [r["name"] for r in races][::-1]
     methods = [("gorilla_shared", "Gorilla, shared timestamps"),
@@ -62,7 +63,7 @@ def bytes_per_point(out_dir, races):
               ncol=2, fontsize=8)
     _save(fig, out_dir, "fig1_bytes_per_point.png")
 
-
+# create a bar chart of bits per value for each channel.
 def channel_bits(out_dir, channels, chan, ts_bits):
     labels = channels + ["Timestamp (shared)"]
     vals = [chan[c]["bits_per_value"] for c in channels] + [ts_bits]
@@ -76,7 +77,7 @@ def channel_bits(out_dir, channels, chan, ts_bits):
     ax.set_title("Cost of each channel")
     _save(fig, out_dir, "fig2_channel_bits.png")
 
-
+# create a bar chart of value cases for each channel.
 def value_cases(out_dir, channels, chan):
     rows = channels + ["Paper (Facebook)"]
     data = [[chan[c][k] for k in ("repeat", "reuse", "new")] for c in channels] + [[51.0, 30.0, 19.0]]
@@ -101,7 +102,7 @@ def value_cases(out_dir, channels, chan):
     ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.22), ncol=3, fontsize=8)
     _save(fig, out_dir, "fig3_value_cases.png")
 
-
+# create a bar chart of timestamp buckets for all races.
 def timestamp_buckets(out_dir, all_time):
     names = ["zero", "7-bit", "9-bit", "12-bit", "32-bit"]
     total = sum(all_time.values())
@@ -119,7 +120,7 @@ def timestamp_buckets(out_dir, all_time):
     ax.legend(loc="lower right", fontsize=8)
     _save(fig, out_dir, "fig4_timestamp_buckets.png")
 
-
+# create a line chart of block size and query time for each race.
 def block_size(out_dir, block_rows, timing_name):
     labels = [r[0] for r in block_rows]
     size = [float(r[1]) for r in block_rows]
@@ -142,7 +143,7 @@ def block_size(out_dir, block_rows, timing_name):
                  fontweight="bold", fontsize=12)
     _save(fig, out_dir, "fig5_block_size.png")
 
-
+# create a bar chart of timestamp buckets for each race.
 def ablations(out_dir, reuse_rows, ts):
     dod_bits, delta_bits, samples = ts
     names = [r[0] for r in reuse_rows] + ["Timestamps"]
@@ -165,7 +166,7 @@ def ablations(out_dir, reuse_rows, ts):
     ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.2), ncol=2, fontsize=8)
     _save(fig, out_dir, "fig6_ablations.png")
 
-
+# draw all the charts.
 def draw_all(out_dir, races, channels, chan, all_time, block_rows, reuse_rows, ts, timing_name):
     bytes_per_point(out_dir, races)
     total_time_bits = sum(r["time_bits"] for r in races)

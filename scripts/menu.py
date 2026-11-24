@@ -10,10 +10,12 @@ except ImportError:
 from gorilla.dataset import list_datasets
 
 
+
+# helper function to describe a dataset.
 def describe(meta):
     return f"{meta['year']} {meta['event']} ({meta['session']})"
 
-
+# helper function to choose a dataset.
 def choose_dataset():
     """List the saved races and ask the user to pick one. Returns (path, meta)."""
     datasets = list_datasets()

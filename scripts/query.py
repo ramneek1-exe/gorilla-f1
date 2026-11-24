@@ -40,7 +40,7 @@ def _can_print(text):
 # cannot show them (some Windows setups).
 SPARK = "▁▂▃▄▅▆▇█" if _can_print("▁▂▃▄▅▆▇█") else " .:-=+*#"
 
-
+# helper function to open stores for query
 def open_stores(path, meta):
     """Open both stores for a race, building and saving them the first time."""
     os.makedirs(RESULTS_DIR, exist_ok=True)
@@ -60,7 +60,7 @@ def open_stores(path, meta):
         print(f"  {fmt:<8} built in {time.perf_counter() - start:.1f} s")
     return stores
 
-
+# display function to plot a sparkline of a series.
 def sparkline(values, width=60):
     """A one-line chart of a series, squeezed to `width` characters."""
     if not values:
@@ -72,7 +72,7 @@ def sparkline(values, width=60):
         return SPARK[0] * len(picked)
     return "".join(SPARK[int((v - low) / (high - low) * (len(SPARK) - 1))] for v in picked)
 
-
+# timing function to measure the time it takes to query the store.
 def timed(fn, *args):
     """Median time of TIMING_RUNS calls, in milliseconds."""
     times = []
@@ -82,7 +82,7 @@ def timed(fn, *args):
         times.append((time.perf_counter() - start) * 1000)
     return statistics.median(times)
 
-
+# helper function to ask a question and return the answer.
 def ask(prompt, valid, show):
     """Ask until the answer is in `valid` (case-insensitive). Empty answer quits."""
     lookup = {str(v).lower(): v for v in valid}
@@ -94,7 +94,7 @@ def ask(prompt, valid, show):
             return lookup[answer.lower()]
         print(f"  Not found. Options: {show}")
 
-
+# helper function to ask for one or more channels. Empty answer quits. Returns a list in the order given.
 def ask_channels(channels):
     """Ask for one or more channels. Empty answer quits. Returns a list in the order given."""
     lookup = {c.lower(): c for c in channels}

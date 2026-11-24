@@ -38,7 +38,8 @@ def main():
         raise SystemExit("No laps with car data found for this session.")
     if rounded:
         print(f"Warning: {rounded} timestamps were not whole milliseconds and were rounded.")
-
+        
+    # Save laps to file
     meta = {"year": args.year, "event": str(session.event["EventName"]), "session": session.name}
     path = os.path.join(DATA_DIR, dataset_filename(meta["year"], meta["event"], meta["session"]))
     save_laps(path, laps, meta)
@@ -55,6 +56,7 @@ def main():
     if not same:
         raise SystemExit(f"Saved file {path} does not match the downloaded data.")
 
+    # compute basic stats.
     samples = sum(len(lap.timestamps) for lap in laps)
     size_mb = os.path.getsize(path) / 1_000_000
     print(f"\nSaved {meta['year']} {meta['event']} ({meta['session']})")

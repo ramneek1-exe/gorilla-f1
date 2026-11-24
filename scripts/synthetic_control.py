@@ -27,7 +27,7 @@ INTERVAL_MS = 240  # the median gap between samples in the real data
 def regular(timestamps):
     return [timestamps[0] + INTERVAL_MS * i for i in range(len(timestamps))]
 
-
+# measure the time it takes to encode a lap
 def measure(laps, make_timestamps):
     totals = {SHARED: 0, PER_CHANNEL: 0, "time_bits": 0, "samples": 0}
     buckets = {b: 0 for b in BUCKET_NAMES}

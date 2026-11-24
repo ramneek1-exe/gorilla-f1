@@ -1,12 +1,12 @@
 """Delta-of-delta timestamp compression (Gorilla paper, Section 4.1.1).
 
-Timestamps are integer milliseconds. Instead of storing each timestamp,
+Timestamps are integer milliseconds (ms). Instead of storing each timestamp,
 we store how much the gap between readings changed:
 
     delta          = t[i] - t[i-1]
     delta_of_delta = delta - previous delta
 
-If readings arrive at a steady rate, delta_of_delta is 0 and costs one bit.
+If readings arrive at a steady rate, delta_of_delta stays 0 and costs one bit.
 Otherwise it goes into the smallest bucket that fits:
 
     delta_of_delta        written as                  total bits
@@ -16,13 +16,13 @@ Otherwise it goes into the smallest bucket that fits:
     -2047 to 2048         1110 + 12 bits               16
     anything else         1111 + 32 bits               36
 
-Inside a bucket the value is stored with an offset so it is never negative:
+Inside a bucket each value is stored with an offset so it is never negative:
 for the 7-bit bucket we store (dod + 63), which turns -63..64 into 0..127.
 The last bucket uses 32-bit two's complement.
 
 Differences from the paper (explained in the report):
   * The paper's block header stores a 2-hour-aligned start time and writes
-    the first timestamp as a 14-bit offset from it. F1 laps don't start on
+    the first timestamp as a 14-bit offset from it. In F1, laps don't start on
     aligned boundaries, so we write the first timestamp in full (64 bits).
   * The paper writes the first delta in 14 bits. We send it through the
     normal buckets instead, treating the previous delta as 0. This never
@@ -37,14 +37,14 @@ BUCKETS = [
     (-255, 256, 0b110, 3, 9),
     (-2047, 2048, 0b1110, 4, 12),
 ]
-FALLBACK_PREFIX = 0b1111
+FALLBACK_PREFIX = 0b1111  # for any other value
 FALLBACK_WIDTH = 32
-FIRST_WIDTH = 64
+FIRST_WIDTH = 64  # full widthfor the first timestamp
 
 # Names used in the stats, so experiments can count how often each case happens.
 BUCKET_NAMES = ["zero", "7-bit", "9-bit", "12-bit", "32-bit"]
 
-
+# Class to encode timestamps into bitstream
 class TimestampEncoder:
     def __init__(self, writer=None):
         self.writer = writer if writer is not None else BitWriter()
@@ -71,13 +71,14 @@ class TimestampEncoder:
         self._prev_t = t
         self.count += 1
 
-    def _write_dod(self, dod):
+    def _write_dod(self, dod): #writes the delta-of-delta to the bitstream
         w = self.writer
         if dod == 0:
-            w.write_bits(0, 1)
+            w.write_bits(0, 1) #first bit = 0 means dod is 0
             self.stats["zero"] += 1
             return
 
+        #check which bucket the delta-of-delta falls into
         for i, (low, high, prefix, prefix_len, width) in enumerate(BUCKETS):
             if low <= dod <= high:
                 w.write_bits(prefix, prefix_len)
@@ -91,14 +92,14 @@ class TimestampEncoder:
         w.write_bits(dod & 0xFFFFFFFF, FALLBACK_WIDTH)  # two's complement
         self.stats["32-bit"] += 1
 
-
+# class to decode timestamps from bitstream
 class TimestampDecoder:
-    def __init__(self, reader):
+    def __init__(self, reader): # decodes the bitstream into timestamps
         self.reader = reader
         self._prev_t = None
         self._prev_delta = 0
 
-    def next(self):
+    def next(self): #gets the next timestamp
         r = self.reader
         if self._prev_t is None:
             t = r.read_bits(FIRST_WIDTH)
@@ -109,7 +110,7 @@ class TimestampDecoder:
         self._prev_t = t
         return t
 
-    def _read_dod(self):
+    def _read_dod(self): #reads the delta-of-delta from the bitstream
         r = self.reader
         if r.read_bit() == 0:
             return 0
@@ -120,15 +121,16 @@ class TimestampDecoder:
         raw = r.read_bits(FALLBACK_WIDTH)
         return raw - (1 << 32) if raw >= 1 << 31 else raw
 
-
-def encode_timestamps(timestamps):
+#helper functions
+#encode timestamps into bitstream
+def encode_timestamps(timestamps): #encodes the timestamps
     """Encode a list of int timestamps. Returns (bytes, bit_length, stats)."""
     enc = TimestampEncoder()
     for t in timestamps:
         enc.add(t)
     return enc.writer.to_bytes(), enc.writer.bit_length, enc.stats
 
-
-def decode_timestamps(data, bit_length, count):
+#decode timestamps from bitstream
+def decode_timestamps(data, bit_length, count): #decodes the timestamps
     dec = TimestampDecoder(BitReader(data, bit_length))
     return [dec.next() for _ in range(count)]

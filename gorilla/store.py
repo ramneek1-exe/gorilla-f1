@@ -43,14 +43,14 @@ def encode_raw_block(timestamps, channels):
         out += struct.pack(f">{count}d", *channels[name])
     return bytes(out)
 
-
+# Parse a raw block header; return (count, channel names, data start offset).)
 def _raw_layout(data):
     count, header_len = struct.unpack_from(">II", data, 0)
     names = json.loads(data[8:8 + header_len].decode("ascii"))
     start = 8 + header_len
     return count, names, start
 
-
+# Decode a whole raw block; return (timestamps, {channel name: values}).
 def decode_raw_block(data):
     count, names, start = _raw_layout(data)
     timestamps = list(struct.unpack_from(f">{count}q", data, start))
@@ -60,7 +60,7 @@ def decode_raw_block(data):
         pos += 8 * count
     return timestamps, channels
 
-
+# Decode a single channel from a raw block.
 def decode_raw_channel(data, name):
     count, names, start = _raw_layout(data)
     if name not in names:
@@ -69,7 +69,7 @@ def decode_raw_channel(data, name):
     pos = start + 8 * count * (1 + names.index(name))
     return timestamps, list(struct.unpack_from(f">{count}d", data, pos))
 
-
+# Decode multiple channels from a raw block.
 def decode_raw_channels(data, names):
     count, all_names, start = _raw_layout(data)
     timestamps = list(struct.unpack_from(f">{count}q", data, start))
@@ -84,8 +84,8 @@ def decode_raw_channels(data, names):
 
 # The store -------------------------------------------------------------------
 
+# An in-memory store of one race, queried by (driver, lap).
 class Store:
-    """An in-memory store of one race, queried by (driver, lap)."""
 
     def __init__(self, meta, block_format, index, blob):
         self.meta = meta
@@ -95,6 +95,7 @@ class Store:
 
     # building, saving, opening
 
+    # Build a store from a sequence of laps.
     @classmethod
     def build(cls, laps, meta, block_format=GORILLA, layout=SHARED):
         index, blob = {}, bytearray()
@@ -109,6 +110,7 @@ class Store:
             blob += block
         return cls(meta, block_format, index, bytes(blob))
 
+    # Save the store to a file.
     def save(self, path):
         header = {
             "meta": self.meta,
@@ -119,6 +121,7 @@ class Store:
         with open(path, "wb") as f:
             f.write(MAGIC + struct.pack(">I", len(encoded)) + encoded + self._blob)
 
+    # Open a store from a file.
     @classmethod
     def open(cls, path):
         with open(path, "rb") as f:
